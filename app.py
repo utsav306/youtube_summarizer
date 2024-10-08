@@ -1,23 +1,26 @@
 from flask import Flask, request, jsonify
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, VideoUnavailable
 import dotenv
 import os
 import google.generativeai as genai
 from flask_cors import CORS
+import logging
 
 # Load environment variables
 dotenv.load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-# Initialize Flask app
 
-
-# Configure CORS
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Configure CORS to allow your Vercel frontend domain
+CORS(app, resources={r"/*": {"origins": ["https://utubesummarizer.vercel.app", "https://your-other-domain.com"]}})
 
 # Configure Generative AI
 genai.configure(api_key=os.environ["API_KEY"])
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
 @app.route('/')
 def index():
     return "Welcome to the YouTube Transcript Summarizer API!"
@@ -27,6 +30,9 @@ def summarize_video():
     # Get the YouTube link from the request
     data = request.get_json()
     link = data.get("link")
+    
+    if not link:
+        return jsonify({"error": "No YouTube link provided."}), 400
     
     # Extract the video ID
     video_id = extract_video_id(link)
@@ -40,13 +46,29 @@ def summarize_video():
         concatenated_text = " ".join(all_texts)
         
         # Summarize the transcript using Google Gemini AI
-        prompt = ("Summarize the following text comprehensively, ensuring no information is omitted. The summary should cover all key points, facts, and minor details, organized in a clear and structured format. Present the summary in bullet points for easy readability. Bold the headings ")
+        prompt = (
+            "Summarize the following text comprehensively, ensuring no information is omitted. "
+            "The summary should cover all key points, facts, and minor details, organized in a clear and structured format. "
+            "Present the summary in bullet points for easy readability. Bold the headings."
+        )
         response = generate_summary(concatenated_text, prompt)
-        return jsonify({"summary": response.text,"video_id": video_id}), 200
+        return jsonify({"summary": response.text, "video_id": video_id}), 200
+
+    except TranscriptsDisabled:
+        logging.error(f"Transcripts are disabled for video ID: {video_id}")
+        return jsonify({"error": "Transcripts are disabled for this video."}), 403
+
+    except NoTranscriptFound:
+        logging.error(f"No transcript found for video ID: {video_id}")
+        return jsonify({"error": "No transcript found for this video."}), 404
+
+    except VideoUnavailable:
+        logging.error(f"Video unavailable: {video_id}")
+        return jsonify({"error": "The video is unavailable."}), 404
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+        logging.exception(f"An unexpected error occurred: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred on the server."}), 500
 
 def extract_video_id(link):
     """Extracts video ID from the YouTube link."""
@@ -62,15 +84,11 @@ def extract_video_id(link):
     else:
         return None
 
-
-
 def generate_summary(text, prompt):
     """Generates a summary using Google Gemini AI."""
     model = genai.GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(f"{prompt}\n\n{text}")
     return response
 
-
 if __name__ == '__main__':
     app.run(debug=True)
-    
