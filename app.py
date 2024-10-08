@@ -21,9 +21,6 @@ genai.configure(api_key=os.environ["API_KEY"])
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-@app.route('/')
-def index():
-    return "Welcome to the YouTube Transcript Summarizer API!"
 
 @app.route('/summarize', methods=['POST'])
 def summarize_video():
