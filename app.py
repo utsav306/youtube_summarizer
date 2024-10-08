@@ -14,7 +14,8 @@ app = Flask(__name__)
 
 
 # Configure CORS
-CORS(app, origins=["https://utubesummarizer.vercel.app/"])
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 # Configure Generative AI
 genai.configure(api_key=os.environ["API_KEY"])
 @app.route('/')
