@@ -1,0 +1,5 @@
+Flask==2.2.3
+Flask-CORS==3.0.10
+python-dotenv==1.0.0
+youtube-transcript-api==0.6.0
+google-generativeai==0.1.0  # Check for the latest version and correct package name
