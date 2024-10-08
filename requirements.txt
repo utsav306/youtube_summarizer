@@ -2,4 +2,4 @@ Flask
 Flask-CORS
 python-dotenv
 youtube-transcript-api
-google-generativea # Check for the latest version and correct package name
+google-generativeai# Check for the latest version and correct package name
