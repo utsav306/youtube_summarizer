@@ -13,7 +13,7 @@ dotenv.load_dotenv()
 app = Flask(__name__)
 
 # Configure CORS to allow your Vercel frontend domain
-CORS(app, resources={r"/*": {"origins": ["https://utubesummarizer.vercel.app", "https://your-other-domain.com"]}})
+CORS(app)
 
 # Configure Generative AI
 genai.configure(api_key=os.environ["API_KEY"])
